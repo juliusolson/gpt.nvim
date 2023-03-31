@@ -5,7 +5,6 @@ M.getLines = function()
     local buf = vim.api.nvim_get_current_buf()
     local pos = vim.api.nvim_win_get_cursor(0)
 
-    -- Get the lines of text that are within the selection
     local lines = vim.api.nvim_buf_get_lines(buf, 0, pos[1], false)
     local text = table.concat(lines, "\n")
     return text
@@ -57,27 +56,24 @@ M.getEdit = function(text, prompt)
 
 
 M.writeToBuffer = function(text)
-    -- Get the current buffer handle
-    local buf = vim.api.nvim_get_current_buf()
-
-    -- Get the current position of the cursor
     local pos = vim.api.nvim_win_get_cursor(0)
 
     lines = vim.split(text, "\n")
-    -- Set the string to append to the buffer
-
-    -- Append the string to the buffer at the current position of the cursor
     vim.api.nvim_put(lines, "c", false, true)
-end
-
-function P(x) 
-    print(vim.inspect(x))
 end
 
 M.replaceSelection = function (args)
     local buf = vim.api.nvim_get_current_buf()
     local start = vim.api.nvim_buf_get_mark(buf, "<")
     local stop =  vim.api.nvim_buf_get_mark(buf, ">")
+
+    -- If visual line-mode, stop col will be too large.
+    -- fix by grabbing everything up until col 0 on the row below
+    -- TODO: do a cleaner fix
+    if (stop[2] > 2000) then
+        stop[2] = 0
+        stop[1] = stop[1] + 1
+    end
 
     local lines = vim.api.nvim_buf_get_text(
         buf,
