@@ -1,14 +1,13 @@
 local M = {}
 
 
-M.getLines = function() 
-    local buf = vim.api.nvim_get_current_buf()
+local writeToBuffer = function(text)
     local pos = vim.api.nvim_win_get_cursor(0)
 
-    local lines = vim.api.nvim_buf_get_lines(buf, 0, pos[1], false)
-    local text = table.concat(lines, "\n")
-    return text
+    local lines = vim.split(text, "\n")
+    vim.api.nvim_put(lines, "c", false, true)
 end
+
 
 function curlOpenAI(command) 
     local handle = io.popen(command)
@@ -54,15 +53,7 @@ M.getEdit = function(text, prompt)
     return curlOpenAI(command)
     end
 
-
-M.writeToBuffer = function(text)
-    local pos = vim.api.nvim_win_get_cursor(0)
-
-    lines = vim.split(text, "\n")
-    vim.api.nvim_put(lines, "c", false, true)
-end
-
-M.replaceSelection = function (args)
+M.editSelection = function (args)
     local buf = vim.api.nvim_get_current_buf()
     local start = vim.api.nvim_buf_get_mark(buf, "<")
     local stop =  vim.api.nvim_buf_get_mark(buf, ">")
@@ -88,7 +79,7 @@ M.replaceSelection = function (args)
 
     local result = M.getEdit(text, instruction)
 
-    resLines = vim.split(result, "\n")
+    local resLines = vim.split(result, "\n")
     vim.api.nvim_buf_set_text(
         buf,
         start[1]-1,
@@ -99,16 +90,21 @@ M.replaceSelection = function (args)
     )
 end
 
-M.generate = function(args)
+M.generateFromPrompt = function(args)
     local prompt = args.args
     local resp = M.getCompletion(prompt)
-    M.writeToBuffer(resp)
+    writeToBuffer(resp)
 end
 
-M.sendLines = function()
-    local text = M.getLines()
+M.complete = function()
+    local buf = vim.api.nvim_get_current_buf()
+    local pos = vim.api.nvim_win_get_cursor(0)
+
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, pos[1], false)
+    local text = table.concat(lines, "\n")
+   
     local resp = M.getCompletion(text)
-    M.writeToBuffer(resp)
+    writeToBuffer(resp)
 end
 
 return M
