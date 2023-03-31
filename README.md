@@ -11,6 +11,12 @@ External dependencies: `curl`
 Plug 'juliusolson/gpt.nvim'
 ```
 
+You also need to have an OpenAI API key accessible as an env variable
+```bash
+# .bashrc/.bash_profile
+export OPENAI_API_KEY="<your-key>"
+```
+
 ## Usage
 
 ### Edit selected text

@@ -33,7 +33,7 @@ M.getCompletion = function(text)
     local command_template = [[curl -sL https://api.openai.com/v1/completions -H "Content-Type: application/json" -H "Authorization: Bearer %s" -d '%s']]
 
 
-    local command = string.format(command_template, os.getenv("OPENAI_TOKEN"), bodyStr)
+    local command = string.format(command_template, os.getenv("OPENAI_API_KEY"), bodyStr)
     return curlOpenAI(command)
 end
 
@@ -50,7 +50,7 @@ M.getEdit = function(text, prompt)
     local command_template = [[curl -sL https://api.openai.com/v1/edits -H "Content-Type: application/json" -H "Authorization: Bearer %s" -d '%s']]
 
 
-    local command = string.format(command_template, os.getenv("OPENAI_TOKEN"), bodyStr)
+    local command = string.format(command_template, os.getenv("OPENAI_API_KEY"), bodyStr)
     return curlOpenAI(command)
     end
 
