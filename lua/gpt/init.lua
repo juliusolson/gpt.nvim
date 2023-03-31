@@ -1,5 +1,7 @@
 local M = {}
 
+M.baseUrl = "https://api.openai.com/v1"
+M._token = os.getenv("OPENAI_API_KEY")
 
 local writeToBuffer = function(text)
     local pos = vim.api.nvim_win_get_cursor(0)
@@ -9,8 +11,15 @@ local writeToBuffer = function(text)
 end
 
 
-function curlOpenAI(command) 
-    local handle = io.popen(command)
+function curlOpenAI(endpoint, body)
+    local curlCommand = table.concat({
+        "curl -sL "..M.baseUrl..endpoint,
+        "-H \"Content-Type: application/json\"",
+        "-H \"Authorization: Bearer ".. M._token.."\"",
+        "-d '"..vim.json.encode(body).."'"
+    }, " ")
+
+    local handle = io.popen(curlCommand)
     local result = handle:read("*a")
     handle:close()
 
@@ -20,37 +29,23 @@ function curlOpenAI(command)
 end
 
 M.getCompletion = function(text)
-    
     local body = {
         model="text-davinci-003",
         prompt=text,
         max_tokens=256,
         temperature=0.1,
     }
-    local bodyStr = vim.json.encode(body)
-
-    local command_template = [[curl -sL https://api.openai.com/v1/completions -H "Content-Type: application/json" -H "Authorization: Bearer %s" -d '%s']]
-
-
-    local command = string.format(command_template, os.getenv("OPENAI_API_KEY"), bodyStr)
-    return curlOpenAI(command)
+    return curlOpenAI("/completions", body)
 end
 
-M.getEdit = function(text, prompt)
-    
+M.getEdit = function(text, prompt) 
     local body = {
         model="text-davinci-edit-001",
         input=text,
         instruction=prompt,
         temperature=0.1,
     }
-    local bodyStr = vim.json.encode(body)
-
-    local command_template = [[curl -sL https://api.openai.com/v1/edits -H "Content-Type: application/json" -H "Authorization: Bearer %s" -d '%s']]
-
-
-    local command = string.format(command_template, os.getenv("OPENAI_API_KEY"), bodyStr)
-    return curlOpenAI(command)
+    return curlOpenAI("/edits", body)
     end
 
 M.editSelection = function (args)
