@@ -4,6 +4,8 @@
 
 ## Installation
 
+External dependencies: `curl`
+
 ```
 " Using vim-plug:
 Plug 'juliusolson/gpt.nvim'
