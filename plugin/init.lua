@@ -1,4 +1,4 @@
-vim.api.nvim_create_user_command('GPT', function(params)
+vim.api.nvim_create_user_command('GPTCOMP', function(params)
     require('gpt').sendLines()
 end, { })
 

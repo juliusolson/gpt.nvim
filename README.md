@@ -27,6 +27,6 @@ Plug 'juliusolson/gpt.nvim'
 
 ### Completion
 
-1. Run `:GPT`
+1. Run `:GPTCOMP`
 2. All text in the buffer up until the current cursor position is sent to the model and is used to generate a completion.
 3. The completion is inserted at the cursors current location
