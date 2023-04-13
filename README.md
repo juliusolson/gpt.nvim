@@ -6,9 +6,19 @@
 
 External dependencies: `curl`
 
-```
+```vim
 " Using vim-plug:
 Plug 'juliusolson/gpt.nvim'
+```
+
+
+
+```lua
+-- using lazy
+require("lazy").setup({
+    "juliusolson/gpt.nvim"
+})
+
 ```
 
 You also need to have an OpenAI API key accessible as an env variable
