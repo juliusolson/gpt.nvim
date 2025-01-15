@@ -96,6 +96,23 @@ M.complete = function()
 end
 
 
+local function process_input(prompt_buf, output_buf)
+    local lines = vim.api.nvim_buf_get_lines(prompt_buf, 0, -1, false)
+
+    local line_count = vim.api.nvim_buf_line_count(output_buf)
+    vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, true, { "" })
+
+    lines[1] = "> " .. lines[1]
+    -- local inp = utils.concat_tables({ "", string.rep("=", 80) }, lines, { "", "ai: " })
+    vim.api.nvim_buf_set_lines(
+        output_buf,
+        line_count, -1,
+        false,
+        lines
+    )
+end
+
+
 local output_buf = vim.api.nvim_create_buf(false, true)
 vim.api.nvim_buf_set_name(output_buf, "AI")
 vim.api.nvim_set_option_value("filetype", "markdown", { buf = output_buf })
@@ -109,6 +126,8 @@ vim.api.nvim_win_set_width(output_win, 100)
 
 local prompt_win = vim.api.nvim_open_win(prompt_buf, true, { split = "below" })
 vim.api.nvim_win_set_height(prompt_win, 5)
+
+vim.keymap.set("n", "<CR>", function() process_input(prompt_buf, output_buf) end, { buffer = prompt_buf })
 
 
 return M
