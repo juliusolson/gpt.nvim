@@ -1,3 +1,5 @@
+local http = require("plenary.curl")
+
 local M = {}
 
 M.baseUrl = "https://api.openai.com/v1"
@@ -11,47 +13,38 @@ local writeToBuffer = function(text)
 end
 
 
-function curlOpenAI(endpoint, body)
-    local curlCommand = table.concat({
-        "curl -sL "..M.baseUrl..endpoint,
-        "-H \"Content-Type: application/json\"",
-        "-H \"Authorization: Bearer ".. M._token.."\"",
-        "-d '"..vim.json.encode(body).."'"
-    }, " ")
+function curlOpenAI(q)
+    local headers = {
+        ["Content-Type"] = "application/json",
+        ["Authorization"] = "Bearer " .. M._token,
+    }
 
-    local handle = io.popen(curlCommand)
-    local result = handle:read("*a")
-    handle:close()
+    local body = {
+        model = "gpt-o-mini",
+        messages = {
+            {
+                role = "user",
+                content = q
+            },
+        }
+    }
+    local resp = http.post(M.base_url, {
+        headers = headers,
+        body = vim.fn.json_encode(body),
+    })
+    local data = vim.json.decode(resp.body)
 
-    local res = vim.json.decode(result)
-
-    return res.choices[1].text
+    return data.choices[1].content
 end
 
 M.getCompletion = function(text)
-    local body = {
-        model="text-davinci-003",
-        prompt=text,
-        max_tokens=256,
-        temperature=0.1,
-    }
-    return curlOpenAI("/completions", body)
+    return curlOpenAI(text)
 end
 
-M.getEdit = function(text, prompt) 
-    local body = {
-        model="text-davinci-edit-001",
-        input=text,
-        instruction=prompt,
-        temperature=0.1,
-    }
-    return curlOpenAI("/edits", body)
-    end
-
-M.editSelection = function (args)
+M.editSelection = function(args)
     local buf = vim.api.nvim_get_current_buf()
     local start = vim.api.nvim_buf_get_mark(buf, "<")
-    local stop =  vim.api.nvim_buf_get_mark(buf, ">")
+    local stop = vim.api.nvim_buf_get_mark(buf, ">")
 
     -- If visual line-mode, stop col will be too large.
     -- fix by grabbing everything up until col 0 on the row below
@@ -63,9 +56,9 @@ M.editSelection = function (args)
 
     local lines = vim.api.nvim_buf_get_text(
         buf,
-        start[1]-1,
+        start[1] - 1,
         start[2],
-        stop[1]-1,
+        stop[1] - 1,
         stop[2],
         {}
     )
@@ -77,9 +70,9 @@ M.editSelection = function (args)
     local resLines = vim.split(result, "\n")
     vim.api.nvim_buf_set_text(
         buf,
-        start[1]-1,
+        start[1] - 1,
         start[2],
-        stop[1]-1,
+        stop[1] - 1,
         stop[2],
         resLines
     )
@@ -97,10 +90,9 @@ M.complete = function()
 
     local lines = vim.api.nvim_buf_get_lines(buf, 0, pos[1], false)
     local text = table.concat(lines, "\n")
-   
+
     local resp = M.getCompletion(text)
     writeToBuffer(resp)
 end
 
 return M
-
