@@ -28,3 +28,10 @@ export OPENAI_API_KEY="<your-key>"
 * Write your prompt in the prompt window, enter normal mode and hit enter to send the prompt
 * The answer will be streamed into the output window
 * Close by hittin `q` in normal mode in the prompt window
+
+## TODO
+
+* [ ] Handle api errors
+* [ ] Handle closing of buffer / window mid-stream
+* [ ] Support other apis
+* [ ] More customizable / extensible
