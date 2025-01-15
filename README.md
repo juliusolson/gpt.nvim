@@ -8,7 +8,7 @@ External dependencies: `curl`
 
 ```lua
 {
-    dir = "juliusolson/gpt.nvim",
+    "juliusolson/gpt.nvim",
     config = function()
         local gpt = require("gpt")
         gpt.setup()
