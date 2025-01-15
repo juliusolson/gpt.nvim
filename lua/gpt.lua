@@ -1,4 +1,5 @@
 local http = require("plenary.curl")
+local utils = require("utils")
 
 local state = {
     prompt = { win = -1, buf = -1 },
@@ -59,23 +60,27 @@ M.generateFromPrompt = function(args)
     write_data_to_buf(resp)
 end
 
+
 local function process_input()
     local lines = vim.api.nvim_buf_get_lines(state.prompt.buf, 0, -1, false)
+
+    if #lines < 1 then
+        return
+    end
+
 
     local line_count = vim.api.nvim_buf_line_count(state.output.buf)
     vim.api.nvim_buf_set_lines(state.prompt.buf, 0, -1, true, { "" })
 
     lines[1] = "> " .. lines[1]
-    -- local inp = utils.concat_tables({ "", string.rep("=", 80) }, lines, { "", "ai: " })
+    local inp = utils.concat_tables({ "", string.rep("=", 80) }, lines, { "", "ai: " })
     vim.api.nvim_buf_set_lines(
         state.output.buf,
         line_count, -1,
         false,
-        lines
+        inp
     )
-    write_data_to_buf(nil)
 end
-
 
 local function new_flow()
     state.output.buf = vim.api.nvim_create_buf(false, true)
@@ -95,6 +100,6 @@ local function new_flow()
     vim.keymap.set("n", "<CR>", function() process_input() end, { buffer = state.prompt.buf })
 end
 
--- new_flow()
+new_flow()
 
 return M
