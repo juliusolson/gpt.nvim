@@ -57,12 +57,6 @@ local function streamfun(_, chunk)
 end
 
 
-local function store_answer(_)
-    vim.schedule(function()
-        table.insert(state.conversation, { role = "assistant", content = state.result })
-    end)
-end
-
 local function get_answer(q)
     local apikey = os.getenv("OPENAI_API_KEY") or ""
     local headers = {
@@ -82,7 +76,11 @@ local function get_answer(q)
         headers = headers,
         body = vim.fn.json_encode(body),
         stream = streamfun,
-        callback = store_answer,
+        callback = function()
+            vim.schedule(function()
+                table.insert(state.conversation, { role = "assistant", content = state.result })
+            end)
+        end,
     })
     return resp
 end
