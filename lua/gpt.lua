@@ -1,5 +1,10 @@
 local http = require("plenary.curl")
 
+local state = {
+    prompt = { win = -1, buf = -1 },
+    output = { win = -1, buf = -1 },
+}
+
 local config = {
     model = "gpt-4o-mini",
     output_width = 100,
@@ -12,12 +17,12 @@ local M = {}
 M._token = os.getenv("OPENAI_API_KEY")
 
 
-local function write_data_to_buf(output_buf, data)
+local function write_data_to_buf(data)
     data = data or "**This** is some *sample* output"
 
-    local lc = vim.api.nvim_buf_line_count(output_buf)
-    local l = vim.api.nvim_buf_get_lines(output_buf, lc - 1, lc, true)
-    vim.api.nvim_buf_set_text(output_buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
+    local lc = vim.api.nvim_buf_line_count(state.output.buf)
+    local l = vim.api.nvim_buf_get_lines(state.output.buf, lc - 1, lc, true)
+    vim.api.nvim_buf_set_text(state.output.buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
 end
 
 local function curl_openai(q)
@@ -54,40 +59,40 @@ M.generateFromPrompt = function(args)
     write_data_to_buf(resp)
 end
 
-local function process_input(prompt_buf, output_buf)
-    local lines = vim.api.nvim_buf_get_lines(prompt_buf, 0, -1, false)
+local function process_input()
+    local lines = vim.api.nvim_buf_get_lines(state.prompt.buf, 0, -1, false)
 
-    local line_count = vim.api.nvim_buf_line_count(output_buf)
-    vim.api.nvim_buf_set_lines(prompt_buf, 0, -1, true, { "" })
+    local line_count = vim.api.nvim_buf_line_count(state.output.buf)
+    vim.api.nvim_buf_set_lines(state.prompt.buf, 0, -1, true, { "" })
 
     lines[1] = "> " .. lines[1]
     -- local inp = utils.concat_tables({ "", string.rep("=", 80) }, lines, { "", "ai: " })
     vim.api.nvim_buf_set_lines(
-        output_buf,
+        state.output.buf,
         line_count, -1,
         false,
         lines
     )
-    write_data_to_buf(output_buf, nil)
+    write_data_to_buf(nil)
 end
 
 
 local function new_flow()
-    local output_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(output_buf, "AI")
-    vim.api.nvim_set_option_value("filetype", "markdown", { buf = output_buf })
+    state.output.buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(state.output.buf, "AI")
+    vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.output.buf })
 
-    local prompt_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(prompt_buf, "Prompt")
+    state.prompt.buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(state.prompt.buf, "Prompt")
 
 
-    local output_win = vim.api.nvim_open_win(output_buf, true, { split = "right" })
-    vim.api.nvim_win_set_width(output_win, config.output_width)
+    state.output.win = vim.api.nvim_open_win(state.output.buf, true, { split = "right" })
+    vim.api.nvim_win_set_width(state.output.win, config.output_width)
 
-    local prompt_win = vim.api.nvim_open_win(prompt_buf, true, { split = "below" })
-    vim.api.nvim_win_set_height(prompt_win, config.prompt_height)
+    state.prompt.win = vim.api.nvim_open_win(state.prompt.buf, true, { split = "below" })
+    vim.api.nvim_win_set_height(state.prompt.win, config.prompt_height)
 
-    vim.keymap.set("n", "<CR>", function() process_input(prompt_buf, output_buf) end, { buffer = prompt_buf })
+    vim.keymap.set("n", "<CR>", function() process_input() end, { buffer = state.prompt.buf })
 end
 
 -- new_flow()
