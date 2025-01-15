@@ -1,7 +1,5 @@
 local http = require("plenary.curl")
 
-local M = {}
-
 local config = {
     model = "gpt-4o-mini",
     output_width = 100,
@@ -9,17 +7,20 @@ local config = {
     base_url = "https://api.openai.com/v1/chat/completions"
 }
 
+local M = {}
+
 M._token = os.getenv("OPENAI_API_KEY")
 
-local writeToBuffer = function(text)
-    local pos = vim.api.nvim_win_get_cursor(0)
 
-    local lines = vim.split(text, "\n")
-    vim.api.nvim_put(lines, "c", false, true)
+local function write_data_to_buf(output_buf, data)
+    data = data or "**This** is some *sample* output"
+
+    local lc = vim.api.nvim_buf_line_count(output_buf)
+    local l = vim.api.nvim_buf_get_lines(output_buf, lc - 1, lc, true)
+    vim.api.nvim_buf_set_text(output_buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
 end
 
-
-function curlOpenAI(q)
+local function curl_openai(q)
     local headers = {
         ["Content-Type"] = "application/json",
         ["Authorization"] = "Bearer " .. M._token,
@@ -44,23 +45,14 @@ function curlOpenAI(q)
 end
 
 M.getCompletion = function(text)
-    return curlOpenAI(text)
+    return curl_openai(text)
 end
 
 M.generateFromPrompt = function(args)
     local prompt = args.args
     local resp = M.getCompletion(prompt)
-    writeToBuffer(resp)
+    write_data_to_buf(resp)
 end
-
-local function write_data_to_buf(output_buf)
-    local data = "**This** is some *sample* output"
-
-    local lc = vim.api.nvim_buf_line_count(output_buf)
-    local l = vim.api.nvim_buf_get_lines(output_buf, lc - 1, lc, true)
-    vim.api.nvim_buf_set_text(output_buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
-end
-
 
 local function process_input(prompt_buf, output_buf)
     local lines = vim.api.nvim_buf_get_lines(prompt_buf, 0, -1, false)
@@ -76,7 +68,7 @@ local function process_input(prompt_buf, output_buf)
         false,
         lines
     )
-    write_data_to_buf(output_buf)
+    write_data_to_buf(output_buf, nil)
 end
 
 
