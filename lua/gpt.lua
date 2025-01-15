@@ -95,4 +95,20 @@ M.complete = function()
     writeToBuffer(resp)
 end
 
+
+local output_buf = vim.api.nvim_create_buf(false, true)
+vim.api.nvim_buf_set_name(output_buf, "AI")
+vim.api.nvim_set_option_value("filetype", "markdown", { buf = output_buf })
+
+local prompt_buf = vim.api.nvim_create_buf(false, true)
+vim.api.nvim_buf_set_name(prompt_buf, "Prompt")
+
+
+local output_win = vim.api.nvim_open_win(output_buf, true, { split = "right" })
+vim.api.nvim_win_set_width(output_win, 100)
+
+local prompt_win = vim.api.nvim_open_win(prompt_buf, true, { split = "below" })
+vim.api.nvim_win_set_height(prompt_win, 5)
+
+
 return M
