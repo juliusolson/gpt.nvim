@@ -4,6 +4,13 @@ local utils = require("utils")
 local state = {
     prompt = { win = -1, buf = -1 },
     output = { win = -1, buf = -1 },
+    conversation = {
+        {
+            role = "system",
+            content = "You are a helpful assistant. You will answer question as concise as possible"
+        }
+    },
+    result = "",
 }
 
 local config = {
@@ -12,10 +19,6 @@ local config = {
     prompt_height = 5,
     base_url = "https://api.openai.com/v1/chat/completions"
 }
-
-local M = {}
-
-M._token = os.getenv("OPENAI_API_KEY")
 
 
 local function write_data_to_buf(data)
@@ -26,40 +29,26 @@ local function write_data_to_buf(data)
     vim.api.nvim_buf_set_text(state.output.buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
 end
 
-local function curl_openai(q)
+local function get_answer(q)
+    local apikey = os.getenv("OPENAI_API_KEY") or ""
     local headers = {
         ["Content-Type"] = "application/json",
-        ["Authorization"] = "Bearer " .. M._token,
+        ["Authorization"] = "Bearer " .. apikey,
     }
-
+    table.insert(state.conversation, {
+        role = "user",
+        content = q
+    })
     local body = {
         model = config.model,
-        messages = {
-            {
-                role = "user",
-                content = q
-            },
-        }
+        messages = state.conversation,
     }
     local resp = http.post(config.base_url, {
         headers = headers,
         body = vim.fn.json_encode(body),
     })
-    local data = vim.json.decode(resp.body)
-
-    return data.choices[1].content
+    return resp
 end
-
-M.getCompletion = function(text)
-    return curl_openai(text)
-end
-
-M.generateFromPrompt = function(args)
-    local prompt = args.args
-    local resp = M.getCompletion(prompt)
-    write_data_to_buf(resp)
-end
-
 
 local function process_input()
     local lines = vim.api.nvim_buf_get_lines(state.prompt.buf, 0, -1, false)
@@ -68,28 +57,38 @@ local function process_input()
         return
     end
 
+    local raw_user_input = table.concat(lines, "\n")
+    local user_input = string.gsub(raw_user_input, "/paste", vim.fn.getreg('"'))
 
-    local line_count = vim.api.nvim_buf_line_count(state.output.buf)
     vim.api.nvim_buf_set_lines(state.prompt.buf, 0, -1, true, { "" })
 
     lines[1] = "> " .. lines[1]
     local inp = utils.concat_tables({ "", string.rep("=", 80) }, lines, { "", "ai: " })
+
+    local line_count = vim.api.nvim_buf_line_count(state.output.buf)
     vim.api.nvim_buf_set_lines(
         state.output.buf,
         line_count, -1,
         false,
         inp
     )
+    get_answer(user_input)
 end
 
-local function new_flow()
+local M = {}
+
+
+local function create_bufs()
     state.output.buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_name(state.output.buf, "AI")
     vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.output.buf })
 
     state.prompt.buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_name(state.prompt.buf, "Prompt")
+end
 
+local function new_flow()
+    create_bufs()
 
     state.output.win = vim.api.nvim_open_win(state.output.buf, true, { split = "right" })
     vim.api.nvim_win_set_width(state.output.win, config.output_width)
