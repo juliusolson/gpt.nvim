@@ -2,7 +2,13 @@ local http = require("plenary.curl")
 
 local M = {}
 
-M.baseUrl = "https://api.openai.com/v1"
+local config = {
+    model = "gpt-4o-mini",
+    output_width = 100,
+    prompt_height = 5,
+    base_url = "https://api.openai.com/v1/chat/completions"
+}
+
 M._token = os.getenv("OPENAI_API_KEY")
 
 local writeToBuffer = function(text)
@@ -20,7 +26,7 @@ function curlOpenAI(q)
     }
 
     local body = {
-        model = "gpt-o-mini",
+        model = config.model,
         messages = {
             {
                 role = "user",
@@ -28,7 +34,7 @@ function curlOpenAI(q)
             },
         }
     }
-    local resp = http.post(M.base_url, {
+    local resp = http.post(config.base_url, {
         headers = headers,
         body = vim.fn.json_encode(body),
     })
@@ -41,57 +47,9 @@ M.getCompletion = function(text)
     return curlOpenAI(text)
 end
 
-M.editSelection = function(args)
-    local buf = vim.api.nvim_get_current_buf()
-    local start = vim.api.nvim_buf_get_mark(buf, "<")
-    local stop = vim.api.nvim_buf_get_mark(buf, ">")
-
-    -- If visual line-mode, stop col will be too large.
-    -- fix by grabbing everything up until col 0 on the row below
-    -- TODO: do a cleaner fix
-    if (stop[2] > 2000) then
-        stop[2] = 0
-        stop[1] = stop[1] + 1
-    end
-
-    local lines = vim.api.nvim_buf_get_text(
-        buf,
-        start[1] - 1,
-        start[2],
-        stop[1] - 1,
-        stop[2],
-        {}
-    )
-    local text = table.concat(lines, "\n")
-    local instruction = args.args
-
-    local result = M.getEdit(text, instruction)
-
-    local resLines = vim.split(result, "\n")
-    vim.api.nvim_buf_set_text(
-        buf,
-        start[1] - 1,
-        start[2],
-        stop[1] - 1,
-        stop[2],
-        resLines
-    )
-end
-
 M.generateFromPrompt = function(args)
     local prompt = args.args
     local resp = M.getCompletion(prompt)
-    writeToBuffer(resp)
-end
-
-M.complete = function()
-    local buf = vim.api.nvim_get_current_buf()
-    local pos = vim.api.nvim_win_get_cursor(0)
-
-    local lines = vim.api.nvim_buf_get_lines(buf, 0, pos[1], false)
-    local text = table.concat(lines, "\n")
-
-    local resp = M.getCompletion(text)
     writeToBuffer(resp)
 end
 
@@ -132,14 +90,14 @@ local function new_flow()
 
 
     local output_win = vim.api.nvim_open_win(output_buf, true, { split = "right" })
-    vim.api.nvim_win_set_width(output_win, 100)
+    vim.api.nvim_win_set_width(output_win, config.output_width)
 
     local prompt_win = vim.api.nvim_open_win(prompt_buf, true, { split = "below" })
-    vim.api.nvim_win_set_height(prompt_win, 5)
+    vim.api.nvim_win_set_height(prompt_win, config.prompt_height)
 
     vim.keymap.set("n", "<CR>", function() process_input(prompt_buf, output_buf) end, { buffer = prompt_buf })
 end
 
---new_flow()
+-- new_flow()
 
 return M
