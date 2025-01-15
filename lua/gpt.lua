@@ -95,6 +95,14 @@ M.complete = function()
     writeToBuffer(resp)
 end
 
+local function write_data_to_buf(output_buf)
+    local data = "**This** is some *sample* output"
+
+    local lc = vim.api.nvim_buf_line_count(output_buf)
+    local l = vim.api.nvim_buf_get_lines(output_buf, lc - 1, lc, true)
+    vim.api.nvim_buf_set_text(output_buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
+end
+
 
 local function process_input(prompt_buf, output_buf)
     local lines = vim.api.nvim_buf_get_lines(prompt_buf, 0, -1, false)
@@ -110,6 +118,7 @@ local function process_input(prompt_buf, output_buf)
         false,
         lines
     )
+    write_data_to_buf(output_buf)
 end
 
 
