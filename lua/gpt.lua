@@ -102,7 +102,7 @@ end
 
 local function create_bufs()
     state.output.buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_name(state.output.buf, "AI")
+    vim.api.nvim_buf_set_name(state.output.buf, config.model)
     vim.api.nvim_set_option_value("filetype", "markdown", { buf = state.output.buf })
 
     state.prompt.buf = vim.api.nvim_create_buf(false, true)
