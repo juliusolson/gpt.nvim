@@ -22,14 +22,7 @@ local config = {
 }
 
 
-local function write_data_to_buf(data)
-    local lc = vim.api.nvim_buf_line_count(state.output.buf)
-    local l = vim.api.nvim_buf_get_lines(state.output.buf, lc - 1, lc, true)
-    vim.api.nvim_buf_set_text(state.output.buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
-end
-
-
-local function streamfun(_, chunk)
+local function handle_chunk(_, chunk)
     vim.schedule(function()
         if chunk == nil or chunk == "" then
             return
@@ -51,7 +44,7 @@ local function streamfun(_, chunk)
         end
 
         -- Write to buf
-        write_data_to_buf(content)
+        utils.append_data_to_buf(content, state.output.buf)
         vim.cmd("redraw")
     end)
 end
@@ -75,7 +68,7 @@ local function get_answer(q)
     local resp = http.post(config.base_url, {
         headers = headers,
         body = vim.fn.json_encode(body),
-        stream = streamfun,
+        stream = handle_chunk,
         callback = function()
             vim.schedule(function()
                 table.insert(state.conversation, { role = "assistant", content = state.result })

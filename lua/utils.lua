@@ -12,4 +12,10 @@ utils.concat_tables = function(...)
     return result
 end
 
+utils.append_data_to_buf = function(data, buf)
+    local lc = vim.api.nvim_buf_line_count(buf)
+    local l = vim.api.nvim_buf_get_lines(buf, lc - 1, lc, true)
+    vim.api.nvim_buf_set_text(buf, lc - 1, #l[1], -1, -1, vim.split(data or "\n", "\n"))
+end
+
 return utils
