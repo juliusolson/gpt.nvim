@@ -184,7 +184,10 @@ local function set_model()
     vim.ui.input({ prompt = "Enter model you would like to use: " }, function(input)
         if input then
             config.model = input
-            vim.api.nvim_win_set_config(state.output.win, { title = "AI (" .. config.model .. ")" })
+            if vim.api.nvim_win_is_valid(state.output.win) and vim.api.nvim_win_is_valid(state.prompt.win) then
+                vim.api.nvim_win_set_config(state.output.win, { border = true, title = "AI (" .. config.model .. ")" })
+            end
+            vim.api.nvim_buf_set_name(state.output.buf, config.model)
         end
     end)
 end
