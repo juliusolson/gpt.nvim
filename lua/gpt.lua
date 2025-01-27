@@ -10,14 +10,13 @@ local state = {
 
 local config = {
     model = "gpt-4o-mini",
+    provider = "openai",
     output_width = 100,
     prompt_height = 5,
-    base_url = "https://api.openai.com/v1/chat/completions",
-    layout = "split"
+    layout = "split",
 }
 
-
-local function handle_chunk(_, chunk)
+local function handle_chunk_openai(_, chunk)
     vim.schedule(function()
         if chunk == nil or chunk == "" then
             return
@@ -45,6 +44,34 @@ local function handle_chunk(_, chunk)
     end)
 end
 
+local function handle_chunk_ollama(_, chunk)
+    vim.schedule(function()
+        if chunk == nil or chunk == "" then
+            return
+        end
+        local payload = vim.fn.json_decode(chunk)
+        local content = payload.message.content
+
+        if content then
+            state.result.content = state.result.content .. content
+            state.result.tokens = state.result.tokens + 1
+        end
+        utils.append_data_to_buf(content, state.output.buf)
+        vim.cmd("redraw")
+    end)
+end
+
+
+local providers = {
+    openai = {
+        base_url = "https://api.openai.com/v1/chat/completions",
+        chunk_parser = handle_chunk_openai,
+    },
+    ollama = {
+        base_url = "http://localhost:11434/api/chat",
+        chunk_parser = handle_chunk_ollama,
+    },
+}
 
 local function get_answer(q)
     local apikey = os.getenv("OPENAI_API_KEY") or ""
@@ -61,10 +88,10 @@ local function get_answer(q)
         model = config.model,
         messages = state.conversation,
     }
-    local resp = http.post(config.base_url, {
+    local resp = http.post(providers[config.provider].base_url, {
         headers = headers,
         body = vim.fn.json_encode(body),
-        stream = handle_chunk,
+        stream = providers[config.provider].chunk_parser,
         callback = function()
             vim.schedule(function()
                 utils.append_data_to_buf(string.format("out tokens: ~%d", state.result.tokens), state.output.buf)

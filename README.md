@@ -24,7 +24,11 @@ Dependencies: `curl`, `plenary.nvim`
     "juliusolson/gpt.nvim",
     config = function()
         local gpt = require("gpt")
-        gpt.setup({ model = "gpt-4o-mini", layout = "float" })
+        gpt.setup({
+            model = "gpt-4o-mini",
+            layout = "float",
+            provider = "openai",
+        })
 
         vim.keymap.set("n", "<leader>ai", gpt.open, { silent = true })
     end,
@@ -42,14 +46,14 @@ export OPENAI_API_KEY="<your-key>"
 
 ## Config
 
-Option          |  default                                   |  constraints
-----            | ---------                                  | ------
-`model`         | `gpt-4o-mini`                              | any open ai model
-`output_width`  | 100                                        | `int` (only for split view) 
-`prompt_height` | 5                                          | `int` (only for split view)
-`base_url`      | https://api.openai.com/v1/chat/completions |  
-`layout`        | split                                      | `{split, float, fullscreen}`
-`system_prompt` | n/a                                        |
+Option          |  default      |  constraints
+----            | ---------     | ------
+`model`         | `gpt-4o-mini` | any openai/ollama model
+`output_width`  | 100           | `int` (only for split view) 
+`prompt_height` | 5             | `int` (only for split view)
+`provider`      | openai        | `{openai, ollama}`
+`layout`        | split         | `{split, float, fullscreen}`
+`system_prompt` | n/a           |
 
 
 ## Usage
@@ -76,7 +80,7 @@ Option          |  default                                   |  constraints
 
 * [ ] Handle api errors
 * [ ] Handle closing of buffer / window mid-stream
-* [ ] Support other apis
+* [x] Support other apis
 * [ ] More customizable / extensible
     * [x] layouts
     * [ ] keymaps
