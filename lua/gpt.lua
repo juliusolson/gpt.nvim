@@ -61,6 +61,34 @@ local function handle_chunk_ollama(_, chunk)
     end)
 end
 
+local function handle_chunk_gemini(_, chunk)
+    vim.schedule(function()
+        if chunk == nil or chunk == "" then
+            return
+        end
+
+        local prefix = "data: "
+        local data = string.sub(chunk, #prefix + 1)
+
+        if data == "[DONE]" then
+            return
+        end
+
+        local payload = vim.fn.json_decode(data)
+        local content = payload.candidates[1].content.parts[1].text
+
+        -- Append content to current chat result
+        if content then
+            state.result.content = state.result.content .. content
+            state.result.tokens = state.result.tokens + 1 -- TODO: make correct
+        end
+
+        -- Write to buf
+        utils.append_data_to_buf(content, state.output.buf)
+        vim.cmd("redraw")
+    end)
+end
+
 
 local providers = {
     openai = {
@@ -71,34 +99,75 @@ local providers = {
         base_url = "http://localhost:11434/api/chat",
         chunk_parser = handle_chunk_ollama,
     },
+    gemini = {
+        base_url =
+        "https://generativelanguage.googleapis.com/v1beta/models",
+        chunk_parser = handle_chunk_gemini,
+    }
 }
 
-local function get_answer(q)
-    local apikey = os.getenv("OPENAI_API_KEY") or ""
+local function make_request(apikey, q)
     local headers = {
         ["Content-Type"] = "application/json",
-        ["Authorization"] = "Bearer " .. apikey,
     }
-    table.insert(state.conversation, {
-        role = "user",
-        content = q
-    })
-    local body = {
-        stream = true,
-        model = config.model,
-        messages = state.conversation,
-    }
-    local resp = http.post(providers[config.provider].base_url, {
+
+    local url = ""
+    local body = {}
+    local msg_key = "messages"
+    if config.provider ~= "gemini" then
+        headers["Authorization"] = "Bearer " .. apikey
+        table.insert(state.conversation, {
+            role = "user",
+            content = q
+        })
+        body.stream = true
+        body.model = config.model
+        url = providers[config.provider].base_url
+    else
+        table.insert(state.conversation, {
+            role = "user",
+            parts = {
+                { text = q },
+            },
+        })
+        msg_key = "contents"
+        local baseurl = providers[config.provider].base_url
+        url = baseurl .. "/" .. config.model .. ":streamGenerateContent?alt=sse&key=" .. apikey
+    end
+
+    body[msg_key] = state.conversation
+
+    local req_options = {
         headers = headers,
         body = vim.fn.json_encode(body),
         stream = providers[config.provider].chunk_parser,
         callback = function()
             vim.schedule(function()
                 utils.append_data_to_buf(string.format("out tokens: ~%d", state.result.tokens), state.output.buf)
-                table.insert(state.conversation, { role = "assistant", content = state.result.content })
+                local msg = {}
+                if config.provider == "gemini" then
+                    msg = { role = "model", parts = { text = state.result.content } }
+                else
+                    msg = { role = "assistant", content = state.result.content }
+                end
+                table.insert(state.conversation, msg)
             end)
         end,
-    })
+    }
+
+    return url, req_options
+end
+
+local function get_answer(q)
+    local api_key_var = ""
+    if config.provider == "gemini" then
+        api_key_var = "GEMINI_API_KEY"
+    else
+        api_key_var = "OPENAI_API_KEY"
+    end
+    local apikey = os.getenv(api_key_var) or ""
+    local url, req_options = make_request(apikey, q)
+    local resp = http.post(url, req_options)
     return resp
 end
 
@@ -250,6 +319,8 @@ M.open = function()
     vim.keymap.set("n", "q", function() M.close() end, { buffer = state.output.buf })
     vim.keymap.set("n", "M", function() set_model() end, { buffer = state.prompt.buf })
     vim.keymap.set("n", "L", function() set_layout() end, { buffer = state.prompt.buf })
+    -- vim.keymap.set("n", "B", function() utils.list_bufs(state.prompt.buf, state.output.buf) end,
+    --     { buffer = state.prompt.buf })
 end
 
 return M
