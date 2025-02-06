@@ -38,20 +38,21 @@ Dependencies: `curl`, `plenary.nvim`
 }
 ```
 
-You also need to have an OpenAI API key accessible as an env variable
+You also need to have an OpenAI/Gemini API key accessible as an env variable
 ```bash
 # .bashrc/.bash_profile
 export OPENAI_API_KEY="<your-key>"
+export GEMINI_API_KEY="<your-key>"
 ```
 
 ## Config
 
 Option          |  default      |  constraints
 ----            | ---------     | ------
-`model`         | `gpt-4o-mini` | any openai/ollama model
+`model`         | `gpt-4o-mini` | any openai/ollama/gemini model
 `output_width`  | 100           | `int` (only for split view) 
 `prompt_height` | 5             | `int` (only for split view)
-`provider`      | openai        | `{openai, ollama}`
+`provider`      | openai        | `{openai, ollama, gemini}`
 `layout`        | split         | `{split, float, fullscreen}`
 `system_prompt` | n/a           |
 
