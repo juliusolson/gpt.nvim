@@ -18,7 +18,7 @@ local config = {
 
 local function handle_chunk_openai(_, chunk)
     vim.schedule(function()
-        if chunk == nil or chunk == "" then
+        if chunk == nil or chunk == ""  or chunk == ": OPENROUTER PROCESSING" then
             return
         end
 
@@ -103,7 +103,11 @@ local providers = {
         base_url =
         "https://generativelanguage.googleapis.com/v1beta/models",
         chunk_parser = handle_chunk_gemini,
-    }
+    },
+    openrouter = {
+        base_url = "https://openrouter.ai/api/v1/chat/completions",
+        chunk_parser = handle_chunk_openai,
+    },
 }
 
 local function make_request(apikey, q)
@@ -162,6 +166,8 @@ local function get_answer(q)
     local api_key_var = ""
     if config.provider == "gemini" then
         api_key_var = "GEMINI_API_KEY"
+    elseif config.provider == "openrouter" then
+        api_key_var = "OPENROUTER_API_KEY"
     else
         api_key_var = "OPENAI_API_KEY"
     end
